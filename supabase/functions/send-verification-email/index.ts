@@ -2,9 +2,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { Resend } from "npm:resend@2.0.0";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+// Initialize Resend with API key from environment variables
+const resendApiKey = Deno.env.get("RESEND_API_KEY");
+const resend = new Resend(resendApiKey);
 const appUrl = Deno.env.get("APP_URL") || "http://localhost:5173";
 
+// Define CORS headers for cross-origin requests
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -17,18 +20,29 @@ serve(async (req) => {
   }
 
   try {
+    // Validate API key
+    if (!resendApiKey) {
+      console.error("RESEND_API_KEY not found in environment variables");
+      return new Response(
+        JSON.stringify({ error: 'Missing Resend API key in server configuration' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      )
+    }
+
+    // Parse request JSON
     const { email, confirmationUrl } = await req.json()
 
     // Validate input
     if (!email || !confirmationUrl) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields' }),
+        JSON.stringify({ error: 'Missing required fields: email or confirmationUrl' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
     }
 
     console.log(`Sending verification email to ${email} with confirmation URL: ${confirmationUrl}`)
 
+    // Send email through Resend
     const emailResponse = await resend.emails.send({
       from: "Agile Sprint Manager <onboarding@resend.dev>",
       to: [email],
@@ -59,13 +73,22 @@ serve(async (req) => {
     });
 
     console.log("Email response:", emailResponse);
+    
+    // Validate response
+    if (emailResponse.error) {
+      console.error("Resend API error:", emailResponse.error);
+      return new Response(
+        JSON.stringify({ error: `Error from email service: ${emailResponse.error}` }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      )
+    }
 
     return new Response(
-      JSON.stringify({ success: true, message: "Verification email sent successfully" }),
+      JSON.stringify({ success: true, message: "Verification email sent successfully", id: emailResponse.id }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     )
   } catch (error) {
-    console.error('Error sending verification email:', error.message)
+    console.error('Error sending verification email:', error.message, error.stack)
     
     return new Response(
       JSON.stringify({ error: error.message }),
