@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { ProjectFormData, SprintFormData } from '@/types';
 
@@ -17,11 +16,6 @@ export async function signUp(email: string, password: string) {
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/`,
-        // Don't use this in production! This is only for testing purposes
-        // Remove this line when email verification is properly set up
-        data: {
-          email_confirm: true // This tells Supabase that we want to log in immediately
-        }
       }
     });
     
