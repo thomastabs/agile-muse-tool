@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { ProjectFormData, SprintFormData } from '@/types';
 
@@ -16,6 +17,11 @@ export async function signUp(email: string, password: string) {
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/`,
+        // Don't use this in production! This is only for testing purposes
+        // Remove this line when email verification is properly set up
+        data: {
+          email_confirm: true // This tells Supabase that we want to log in immediately
+        }
       }
     });
     
@@ -26,6 +32,14 @@ export async function signUp(email: string, password: string) {
     }
     
     console.log("Signup successful, response data:", data);
+    
+    // Add additional logging to see what's in the response
+    if (data.user) {
+      console.log("User created with ID:", data.user.id);
+      console.log("Email confirmation status:", data.user.email_confirmed_at ? "Confirmed" : "Not confirmed");
+      console.log("User session:", data.session ? "Created" : "Not created");
+    }
+    
     return { data, error: null };
   } catch (err: any) {
     // Log the full error object for debugging

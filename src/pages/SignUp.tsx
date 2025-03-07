@@ -88,11 +88,28 @@ const SignUp: React.FC = () => {
         });
       } else {
         console.log("Signup completed successfully");
-        setEmailSent(true);
-        toast({
-          title: "Sign up successful",
-          description: "Please check your email to verify your account"
-        });
+        
+        // Check if user needs email confirmation
+        if (data.user.email_confirmed_at || data.session) {
+          // User is confirmed or has a session already (email confirmation disabled)
+          toast({
+            title: "Sign up successful",
+            description: "You can now sign in with your credentials"
+          });
+          
+          // If session exists, we can redirect to home page
+          if (data.session) {
+            navigate("/", { replace: true });
+            return;
+          }
+        } else {
+          // User needs to confirm email
+          setEmailSent(true);
+          toast({
+            title: "Sign up successful",
+            description: "Please check your email to verify your account. If you don't receive an email, check your Supabase settings."
+          });
+        }
       }
     } catch (err: any) {
       console.error("Unexpected client-side error during signup:", err);
