@@ -1,25 +1,18 @@
 
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useProject } from "@/context/ProjectContext";
 import ProjectForm from "@/components/ProjectForm";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { PlusIcon, ExternalLinkIcon, LogOut } from "lucide-react";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { PlusIcon, LogOut } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { supabase, signOut } from "@/lib/supabase";
 import { toast } from "@/components/ui/use-toast";
 import ProfileDashboard from "@/components/ProfileDashboard";
 
-const Index = () => {
-  const { projects, selectedProject, selectProject } = useProject();
+const ProjectsPage = () => {
+  const { projects } = useProject();
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [user, setUser] = useState<any>(null);
   const navigate = useNavigate();
@@ -32,13 +25,6 @@ const Index = () => {
     
     getUser();
   }, []);
-
-  // Redirect to project detail page when a project is selected
-  useEffect(() => {
-    if (selectedProject) {
-      navigate(`/my-projects/${selectedProject.id}`);
-    }
-  }, [selectedProject, navigate]);
 
   const handleSignOut = async () => {
     const { error } = await signOut();
@@ -53,17 +39,12 @@ const Index = () => {
     }
   };
 
-  // If we have a selected project, render nothing as we'll redirect in the useEffect
-  if (selectedProject) {
-    return null;
-  }
-
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 animate-fade-in">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold">Scrumify Hub</h1>
+            <h1 className="text-3xl font-bold">My Projects</h1>
             <p className="text-muted-foreground mt-2">
               Manage your agile projects with ease
             </p>
@@ -80,6 +61,14 @@ const Index = () => {
               <PlusIcon className="h-4 w-4 mr-1" /> New Project
             </Button>
           </div>
+        </div>
+
+        <div className="mb-6">
+          <Button variant="ghost" asChild className="pl-0">
+            <Link to="/">
+              ← Back to Dashboard
+            </Link>
+          </Button>
         </div>
 
         {projects.length === 0 ? (
@@ -118,9 +107,11 @@ const Index = () => {
                 <CardFooter>
                   <Button
                     className="w-full"
-                    onClick={() => selectProject(project.id)}
+                    asChild
                   >
-                    Open Project <ExternalLinkIcon className="h-3 w-3 ml-1" />
+                    <Link to={`/my-projects/${project.id}`}>
+                      Open Project
+                    </Link>
                   </Button>
                 </CardFooter>
               </Card>
@@ -136,4 +127,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default ProjectsPage;
