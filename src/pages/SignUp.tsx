@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { signUp, getSession } from "@/lib/supabase";
+import { signUp, getSession, supabase } from "@/lib/supabase";
 import { toast } from "@/components/ui/use-toast";
 
 const SignUp: React.FC = () => {
@@ -29,6 +29,25 @@ const SignUp: React.FC = () => {
 
     checkSession();
   }, [navigate]);
+
+  const sendVerificationEmail = async (email: string, confirmationUrl: string) => {
+    try {
+      const response = await supabase.functions.invoke('send-verification-email', {
+        body: { email, confirmationUrl }
+      });
+
+      if (response.error) {
+        console.error("Error invoking function:", response.error);
+        return false;
+      }
+
+      console.log("Edge function response:", response.data);
+      return true;
+    } catch (error) {
+      console.error("Error sending verification email:", error);
+      return false;
+    }
+  };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,12 +122,25 @@ const SignUp: React.FC = () => {
             return;
           }
         } else {
-          // User needs to confirm email
-          setEmailSent(true);
-          toast({
-            title: "Sign up successful",
-            description: "Please check your email to verify your account. If you don't receive an email, check your Supabase settings."
-          });
+          // User needs to confirm email - Send custom email with Resend
+          const origin = window.location.origin;
+          const confirmationUrl = `${origin}/sign-in?email=${encodeURIComponent(email)}`;
+          
+          const emailSent = await sendVerificationEmail(email, confirmationUrl);
+          
+          if (emailSent) {
+            setEmailSent(true);
+            toast({
+              title: "Sign up successful",
+              description: "Please check your email to verify your account."
+            });
+          } else {
+            toast({
+              title: "Email verification notice",
+              description: "Account created but there was an issue sending the verification email. Please contact support.",
+              variant: "destructive"
+            });
+          }
         }
       }
     } catch (err: any) {
