@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { ProjectFormData, SprintFormData } from '@/types';
 
@@ -14,34 +13,6 @@ let currentUser: { id: string; username: string; email: string } | null = null;
 export async function signUp(email: string, password: string, username: string) {
   try {
     console.log("Starting signup with email:", email, "and username:", username);
-    
-    // First check if the users table is accessible
-    try {
-      const { data: testUsers, error: tableError } = await supabase
-        .from('users')
-        .select('id')
-        .limit(1);
-      
-      if (tableError) {
-        console.error("Error accessing users table:", tableError);
-        return { 
-          data: null, 
-          error: { 
-            message: "Unable to register at this time. Please try again later.", 
-            status: 500 
-          } 
-        };
-      }
-    } catch (tableError) {
-      console.error("Exception when checking users table:", tableError);
-      return { 
-        data: null, 
-        error: { 
-          message: "System error during registration. Please try again later.", 
-          status: 500 
-        } 
-      };
-    }
     
     // Check if user already exists
     const { data: existingUsers, error: checkError } = await supabase
@@ -230,7 +201,7 @@ export async function createProjectInDB(data: ProjectFormData) {
   const { data: newProject, error } = await supabase
     .from('projects')
     .insert({
-      owner_id: userData.user.id, // Updated from user_id to owner_id
+      owner_id: userData.user.id,
       title: data.title,
       description: data.description,
       end_goal: data.endGoal
@@ -250,7 +221,7 @@ export async function getProjectsFromDB() {
   const { data, error } = await supabase
     .from('projects')
     .select('*')
-    .eq('owner_id', userData.user.id) // Updated from user_id to owner_id
+    .eq('owner_id', userData.user.id)
     .order('created_at', { ascending: false });
   
   return { data, error };
@@ -270,7 +241,7 @@ export async function updateProjectInDB(id: string, data: ProjectFormData) {
       end_goal: data.endGoal
     })
     .eq('id', id)
-    .eq('owner_id', userData.user.id) // Updated from user_id to owner_id
+    .eq('owner_id', userData.user.id)
     .select()
     .single();
   
@@ -292,7 +263,6 @@ export async function deleteAllProjectsFromDB() {
     return { error: new Error('User not authenticated') };
   }
 
-  // First, delete all sprints associated with the user's projects
   const { data: projects } = await supabase
     .from('projects')
     .select('id')
@@ -301,13 +271,11 @@ export async function deleteAllProjectsFromDB() {
   if (projects && projects.length > 0) {
     const projectIds = projects.map(project => project.id);
     
-    // Delete all sprints associated with these projects
     await supabase
       .from('sprints')
       .delete()
       .in('project_id', projectIds);
     
-    // Delete all projects
     const { error } = await supabase
       .from('projects')
       .delete()
@@ -330,12 +298,12 @@ export async function createSprintInDB(projectId: string, data: SprintFormData) 
     .from('sprints')
     .insert({
       project_id: projectId,
-      user_id: userData.user.id, // Using auth.users.id
+      user_id: userData.user.id,
       title: data.title,
       description: data.description,
       start_date: data.startDate.toISOString(),
       end_date: data.endDate.toISOString(),
-      duration: Math.ceil((data.endDate.getTime() - data.startDate.getTime()) / (1000 * 60 * 60 * 24)) // Calculate duration in days
+      duration: Math.ceil((data.endDate.getTime() - data.startDate.getTime()) / (1000 * 60 * 60 * 24))
     })
     .select()
     .single();
@@ -352,7 +320,7 @@ export async function getSprintsFromDB() {
   const { data, error } = await supabase
     .from('sprints')
     .select('*')
-    .eq('user_id', userData.user.id) // Filter by the user's ID
+    .eq('user_id', userData.user.id)
     .order('created_at', { ascending: false });
   
   return { data, error };
@@ -366,7 +334,7 @@ export async function updateSprintInDB(id: string, data: SprintFormData) {
       description: data.description,
       start_date: data.startDate.toISOString(),
       end_date: data.endDate.toISOString(),
-      duration: Math.ceil((data.endDate.getTime() - data.startDate.getTime()) / (1000 * 60 * 60 * 24)) // Calculate duration in days
+      duration: Math.ceil((data.endDate.getTime() - data.startDate.getTime()) / (1000 * 60 * 60 * 24))
     })
     .eq('id', id)
     .select()
