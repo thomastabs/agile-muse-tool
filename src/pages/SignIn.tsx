@@ -5,13 +5,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { signIn, getSession } from "@/lib/supabase";
 import { toast } from "@/components/ui/use-toast";
 
 const SignIn: React.FC = () => {
-  const [email, setEmail] = useState("");
+  const [emailOrUsername, setEmailOrUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   // Check if user is already signed in
@@ -28,21 +30,24 @@ const SignIn: React.FC = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     
-    if (!email || !password) {
+    if (!emailOrUsername || !password) {
+      setError("Please enter both email/username and password");
       toast({
         title: "Error",
-        description: "Please enter both email and password",
+        description: "Please enter both email/username and password",
         variant: "destructive"
       });
       return;
     }
     
     setLoading(true);
-    const { data, error } = await signIn(email, password);
+    const { data, error } = await signIn(emailOrUsername, password);
     setLoading(false);
     
     if (error) {
+      setError(error.message);
       toast({
         title: "Sign in failed",
         description: error.message,
@@ -81,14 +86,19 @@ const SignIn: React.FC = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSignIn} className="space-y-4">
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="emailOrUsername">Email or Username</Label>
                 <Input 
-                  id="email" 
-                  type="email" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="your@email.com" 
+                  id="emailOrUsername" 
+                  type="text" 
+                  value={emailOrUsername}
+                  onChange={(e) => setEmailOrUsername(e.target.value)}
+                  placeholder="your@email.com or username" 
                   required
                 />
               </div>

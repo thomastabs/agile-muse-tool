@@ -11,10 +11,11 @@ import { toast } from "@/components/ui/use-toast";
 
 const SignUp: React.FC = () => {
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [emailSent, setEmailSent] = useState(false);
+  const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
@@ -34,11 +35,11 @@ const SignUp: React.FC = () => {
     e.preventDefault();
     setError(null);
     
-    if (!email || !password) {
-      setError("Please enter both email and password");
+    if (!email || !password || !username) {
+      setError("Please enter email, username and password");
       toast({
         title: "Error",
-        description: "Please enter both email and password",
+        description: "Please enter email, username and password",
         variant: "destructive"
       });
       return;
@@ -64,10 +65,20 @@ const SignUp: React.FC = () => {
       return;
     }
     
+    if (username.length < 3) {
+      setError("Username should be at least 3 characters");
+      toast({
+        title: "Error",
+        description: "Username should be at least 3 characters",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setLoading(true);
     try {
       console.log("Starting signup process for:", email);
-      const { data, error } = await signUp(email, password);
+      const { data, error } = await signUp(email, password, username);
       
       if (error) {
         console.error("Sign up error returned:", error);
@@ -88,11 +99,15 @@ const SignUp: React.FC = () => {
         });
       } else {
         console.log("Signup completed successfully");
-        setEmailSent(true);
+        setSuccess(true);
         toast({
           title: "Sign up successful",
-          description: "Please check your email to verify your account"
+          description: "Your account has been created successfully!"
         });
+        // Navigate to dashboard after successful signup
+        setTimeout(() => {
+          navigate("/");
+        }, 2000);
       }
     } catch (err: any) {
       console.error("Unexpected client-side error during signup:", err);
@@ -131,18 +146,11 @@ const SignUp: React.FC = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {emailSent ? (
+            {success ? (
               <Alert>
                 <AlertDescription className="text-center py-4">
-                  <p className="mb-4">Verification email sent to <strong>{email}</strong></p>
-                  <p>Please check your inbox and click the link to verify your email address.</p>
-                  <Button 
-                    variant="outline" 
-                    className="mt-4"
-                    onClick={() => navigate("/sign-in")}
-                  >
-                    Go to Sign In
-                  </Button>
+                  <p className="mb-4">Account created successfully!</p>
+                  <p>Redirecting you to the dashboard...</p>
                 </AlertDescription>
               </Alert>
             ) : (
@@ -162,6 +170,18 @@ const SignUp: React.FC = () => {
                     placeholder="your@email.com" 
                     required
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="username">Username</Label>
+                  <Input 
+                    id="username" 
+                    type="text" 
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="johndoe" 
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">Must be at least 3 characters</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
