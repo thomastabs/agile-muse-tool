@@ -14,7 +14,27 @@ export async function signUp(email: string, password: string, username: string) 
   try {
     console.log("Starting signup with email:", email, "and username:", username);
     
-    // Check if user already exists with direct query instead of using .or()
+    // Check if the users table exists
+    const { error: tableCheckError } = await supabase
+      .from('users')
+      .select('id')
+      .limit(1);
+    
+    if (tableCheckError) {
+      console.error("Error checking users table:", tableCheckError);
+      
+      if (tableCheckError.message.includes('relation "public.users" does not exist')) {
+        return { 
+          data: null, 
+          error: { 
+            message: "Database not properly initialized. Please contact support.",
+            status: 500
+          } 
+        };
+      }
+    }
+    
+    // Check if user already exists
     const { data: existingUsers, error: checkError } = await supabase
       .from('users')
       .select('id')
@@ -22,18 +42,6 @@ export async function signUp(email: string, password: string, username: string) 
     
     if (checkError) {
       console.error("Error checking for existing user:", checkError);
-      
-      // If the error is about relation not existing, provide more specific error
-      if (checkError.message.includes('relation "public.users" does not exist')) {
-        return { 
-          data: null, 
-          error: { 
-            message: "Database error: The users table does not exist. Please contact support.",
-            status: 500
-          } 
-        };
-      }
-      
       return { data: null, error: checkError };
     }
     

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -82,7 +81,16 @@ const SignUp: React.FC = () => {
       
       if (error) {
         console.error("Sign up error returned:", error);
-        setError(error.message || "An error occurred during signup");
+        
+        // Handle specific error cases
+        if (error.message.includes("already exists")) {
+          setError("A user with this email or username already exists. Try signing in or use different credentials.");
+        } else if (error.message.includes("Database not properly initialized")) {
+          setError("System error: Unable to register at this time. Please try again later or contact support.");
+        } else {
+          setError(error.message || "An error occurred during signup");
+        }
+        
         toast({
           title: "Sign up failed",
           description: error.message || "An error occurred during signup",
