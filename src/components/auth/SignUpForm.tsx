@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { signUp } from "@/lib/supabase";
 import { toast } from "@/components/ui/use-toast";
 import { validateEmail, validateUsername, validatePassword, validateConfirmPassword } from "@/utils/validation";
+import { checkDatabaseConnection } from "@/lib/db-diagnostic";
 
 type SignUpFormProps = {
   onSuccess: () => void;
@@ -20,6 +21,20 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSuccess }) => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dbStatus, setDbStatus] = useState<string | null>(null);
+
+  // Check database connection on component mount
+  useEffect(() => {
+    const verifyDatabaseConnection = async () => {
+      const result = await checkDatabaseConnection();
+      if (result.status === "error") {
+        setDbStatus(`Database issue: ${result.message}`);
+        console.error("Database diagnostic:", result);
+      }
+    };
+
+    verifyDatabaseConnection();
+  }, []);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +61,13 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSuccess }) => {
     setLoading(true);
     try {
       console.log("Starting signup process for:", email);
+      
+      // Check database connection before attempting signup
+      const dbCheck = await checkDatabaseConnection();
+      if (dbCheck.status === "error") {
+        throw new Error(`Database error: ${dbCheck.message}`);
+      }
+      
       const { data, error } = await signUp(email, password, username);
       
       if (error) {
@@ -56,6 +78,8 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSuccess }) => {
           setError("A user with this email or username already exists. Try signing in or use different credentials.");
         } else if (error.message.includes("Unable to register") || error.message.includes("System error")) {
           setError("Unable to register at this time. Please try again later or contact support.");
+        } else if (error.message.includes("Database setup incomplete")) {
+          setError("The application is still initializing. Please try again in a few moments.");
         } else {
           setError(error.message || "An error occurred during signup");
         }
@@ -101,6 +125,12 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSuccess }) => {
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      
+      {dbStatus && (
+        <Alert variant="warning">
+          <AlertDescription>{dbStatus}</AlertDescription>
         </Alert>
       )}
       

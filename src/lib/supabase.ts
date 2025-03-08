@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { ProjectFormData, SprintFormData } from '@/types';
 
@@ -14,11 +15,32 @@ export async function signUp(email: string, password: string, username: string) 
   try {
     console.log("Starting signup with email:", email, "and username:", username);
     
-    // Check if user already exists
+    // First, try to verify if the users table exists by performing a count query
+    const { count, error: tableCheckError } = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true });
+    
+    if (tableCheckError) {
+      console.error("Error checking users table:", tableCheckError);
+      // If we get an error that the relation doesn't exist, we should create it
+      if (tableCheckError.code === '42P01' || tableCheckError.message.includes("relation") || tableCheckError.message.includes("does not exist")) {
+        console.warn("Users table doesn't exist. The table should be created via migration.");
+        return { 
+          data: null, 
+          error: { 
+            message: "Database setup incomplete. Please contact administrator.", 
+            status: 500 
+          } 
+        };
+      }
+    }
+    
+    // Check if user already exists with this email or username
     const { data: existingUsers, error: checkError } = await supabase
       .from('users')
       .select('id')
-      .or(`email.eq.${email},username.eq.${username}`);
+      .or(`email.eq.${email},username.eq.${username}`)
+      .limit(1);
     
     if (checkError) {
       console.error("Error checking for existing user:", checkError);
