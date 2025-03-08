@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { ProjectFormData, SprintFormData } from '@/types';
 
@@ -14,24 +15,32 @@ export async function signUp(email: string, password: string, username: string) 
   try {
     console.log("Starting signup with email:", email, "and username:", username);
     
-    // Check if the users table exists
-    const { error: tableCheckError } = await supabase
-      .from('users')
-      .select('id')
-      .limit(1);
-    
-    if (tableCheckError) {
-      console.error("Error checking users table:", tableCheckError);
+    // First check if the users table is accessible
+    try {
+      const { data: testUsers, error: tableError } = await supabase
+        .from('users')
+        .select('id')
+        .limit(1);
       
-      if (tableCheckError.message.includes('relation "public.users" does not exist')) {
+      if (tableError) {
+        console.error("Error accessing users table:", tableError);
         return { 
           data: null, 
           error: { 
-            message: "Database not properly initialized. Please contact support.",
-            status: 500
+            message: "Unable to register at this time. Please try again later.", 
+            status: 500 
           } 
         };
       }
+    } catch (tableError) {
+      console.error("Exception when checking users table:", tableError);
+      return { 
+        data: null, 
+        error: { 
+          message: "System error during registration. Please try again later.", 
+          status: 500 
+        } 
+      };
     }
     
     // Check if user already exists
